@@ -1,4 +1,24 @@
 """
+
+"""
+function create_compartment_model(
+    model_filenames::Array{String};
+    type=::CoreModel
+)
+    for (i, fn) in enumerate(model_filenames)
+        model = load_model(type,fn)
+        # find biomass reaction
+        bm = find_biomass_reactions(model, exclude_exchanges = true)
+        # find exchanges
+        ex_rxn_mets = Dict(
+            ex_rxn => first(keys(reaction_stoichiometry(model, ex_rxn))) for
+            ex_rxn in filter(looks_like_exchange_reaction, reactions(model))
+        )
+    end
+
+end
+
+"""
     add_community_objective!(
         community::CoreModel,
         objective_mets_weights::Dict{String, Float64};
