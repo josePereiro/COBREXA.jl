@@ -3,19 +3,34 @@
 """
 function create_compartment_model(
     model_filenames::Array{String};
-    type=::CoreModel
+    type=CoreModel,
+    model_names=String[]
 )
+    compModel = nothing
+    biomass_ids = Array{String}(undef,length(model_filenames))
     for (i, fn) in enumerate(model_filenames)
         model = load_model(type,fn)
+        modelName = isempty(model_names) ? split(fn,".")[1] : model_names[i]
         # find biomass reaction
-        bm = find_biomass_reactions(model, exclude_exchanges = true)
+        bm = find_biomass_reaction_ids(model, exclude_exchanges = true)
+        # name of model's biomass metabolite in the comp. model
+        biomass_ids[i] = modelName * "_" * bm[1]
         # find exchanges
         ex_rxn_mets = Dict(
             ex_rxn => first(keys(reaction_stoichiometry(model, ex_rxn))) for
             ex_rxn in filter(looks_like_exchange_reaction, reactions(model))
         )
+        if i==1
+            compModel = join_with_exchanges(type,[model],ex_rxn_mets,
+                biomass_ids=bm,model_names=[modelName])
+        else
+            # TODO in-place? (missing for CoreModel)
+            compModel = add_model_with_exchanges(compModel,model,ex_rxn_mets,
+                model_name=modelName,biomass_id=bm[1])
+        end
     end
 
+    return (compModel, biomass_ids)
 end
 
 """
