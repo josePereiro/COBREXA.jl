@@ -261,3 +261,11 @@ end
     @test size(stoichiometry(c)) == (166, 211)
     @test isapprox(d["community_biomass"], 0.41559777495618294, atol = TEST_TOLERANCE)
 end
+
+@testset "Automatic community model creation" begin
+    m1 = model_paths["e_coli_core.json"]
+    m2 = model_paths["iJO1366.mat"]
+    (cm, biomass_ids) = create_compartment_model([m1,m2])
+    @test isa(cm, StandardModel)
+    @test biomass_ids==["BIOMASS_Ecoli_core_w_GAM", "BIOMASS_Ec_iJO1366_core_53p95M"]
+end

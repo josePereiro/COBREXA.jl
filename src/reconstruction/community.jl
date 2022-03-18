@@ -24,13 +24,13 @@ See also: [`join_with_exchanges`](@ref)
 """
 function create_compartment_model(
     model_filenames::Array{String};
-    type = CoreModel,
+    type = StandardModel,
     model_names = String[],
 )
     compModel = nothing
     biomass_ids = Array{String}(undef, length(model_filenames))
     for (i, fn) in enumerate(model_filenames)
-        model = load_model(type, fn)
+        model = load_model(StandardModel, fn)
         modelName = isempty(model_names) ? split(fn, ".")[1] : model_names[i]
         # find biomass reaction
         bm = find_biomass_reaction_ids(model, exclude_exchanges = true)
@@ -43,15 +43,14 @@ function create_compartment_model(
         )
         if i == 1
             compModel = join_with_exchanges(
-                type,
+                StandardModel,
                 [model],
                 ex_rxn_mets,
                 biomass_ids = bm,
                 model_names = [modelName],
             )
         else
-            # TODO in-place? (missing for CoreModel)
-            compModel = add_model_with_exchanges(
+            add_model_with_exchanges!(
                 compModel,
                 model,
                 ex_rxn_mets,
@@ -61,7 +60,7 @@ function create_compartment_model(
         end
     end
 
-    return (compModel, biomass_ids)
+    return (convert(type,compModel), biomass_ids)
 end
 
 """
