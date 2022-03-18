@@ -1,16 +1,37 @@
 """
+    create_compartment_model(
+        model_filenames::Array{String};
+        type=CoreModel,
+        model_names=String[]
+    )
 
+Create a compartmentalised community model directly from a set of model files. This
+function is a shortcut for creating a community model with
+[`join_with_exchanges`](@ref) (see documentation for description of the model).
+It's meant to be used with a large collection of individual models, eg in
+microbiome analysis. Models are loaded one by one.
+NB: this function hides away heuristics used to join models together. If you
+are unsure if your models adhere to what is expected by the function, check if
+[`looks_like_exchange_reaction`](@ref) and [`find_biomass_reaction_ids`](@ref)
+correctly identify exhange and biomass reactions respectively.
+
+# Example
+```
+create_compartment_model(["m1.json", "m2.json"])
+```
+
+See also: [`join_with_exchanges`](@ref)
 """
 function create_compartment_model(
     model_filenames::Array{String};
-    type=CoreModel,
-    model_names=String[]
+    type = CoreModel,
+    model_names = String[],
 )
     compModel = nothing
-    biomass_ids = Array{String}(undef,length(model_filenames))
+    biomass_ids = Array{String}(undef, length(model_filenames))
     for (i, fn) in enumerate(model_filenames)
-        model = load_model(type,fn)
-        modelName = isempty(model_names) ? split(fn,".")[1] : model_names[i]
+        model = load_model(type, fn)
+        modelName = isempty(model_names) ? split(fn, ".")[1] : model_names[i]
         # find biomass reaction
         bm = find_biomass_reaction_ids(model, exclude_exchanges = true)
         # name of model's biomass metabolite in the comp. model
@@ -20,13 +41,23 @@ function create_compartment_model(
             ex_rxn => first(keys(reaction_stoichiometry(model, ex_rxn))) for
             ex_rxn in filter(looks_like_exchange_reaction, reactions(model))
         )
-        if i==1
-            compModel = join_with_exchanges(type,[model],ex_rxn_mets,
-                biomass_ids=bm,model_names=[modelName])
+        if i == 1
+            compModel = join_with_exchanges(
+                type,
+                [model],
+                ex_rxn_mets,
+                biomass_ids = bm,
+                model_names = [modelName],
+            )
         else
             # TODO in-place? (missing for CoreModel)
-            compModel = add_model_with_exchanges(compModel,model,ex_rxn_mets,
-                model_name=modelName,biomass_id=bm[1])
+            compModel = add_model_with_exchanges(
+                compModel,
+                model,
+                ex_rxn_mets,
+                model_name = modelName,
+                biomass_id = bm[1],
+            )
         end
     end
 
